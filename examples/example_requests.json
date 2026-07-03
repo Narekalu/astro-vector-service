@@ -1,0 +1,170 @@
+{
+  "examples": [
+    {
+      "name": "Complete Request - Paris 1984",
+      "description": "Full request with all fields provided",
+      "request": {
+        "date": "1984-09-23",
+        "time": "12:35",
+        "place": "Paris, France"
+      },
+      "expected_chinese": "Yang Wood Rat",
+      "expected_mayan": "7 Chicchan"
+    },
+    {
+      "name": "No Time Provided - London 2000",
+      "description": "Request without time (will default to 12:00 noon)",
+      "request": {
+        "date": "2000-01-01",
+        "place": "London, UK"
+      },
+      "notes": "time_accuracy will be 'low'"
+    },
+    {
+      "name": "Different Timezone - Tokyo 1990",
+      "description": "Request from a different timezone",
+      "request": {
+        "date": "1990-06-15",
+        "time": "08:30",
+        "place": "Tokyo, Japan"
+      },
+      "notes": "Timezone will be Asia/Tokyo"
+    },
+    {
+      "name": "Before Li Chun - Feb 2, 1984",
+      "description": "Date before Li Chun boundary (should be 1983 Pig)",
+      "request": {
+        "date": "1984-02-02",
+        "time": "12:00",
+        "place": "Shanghai, China"
+      },
+      "expected_chinese": "Yin Water Pig (1983)"
+    },
+    {
+      "name": "After Li Chun - Feb 5, 1984",
+      "description": "Date after Li Chun boundary (should be 1984 Rat)",
+      "request": {
+        "date": "1984-02-05",
+        "time": "12:00",
+        "place": "Shanghai, China"
+      },
+      "expected_chinese": "Yang Wood Rat (1984)"
+    },
+    {
+      "name": "New Year's Day 2000",
+      "description": "Millennium celebration",
+      "request": {
+        "date": "2000-01-01",
+        "time": "00:00",
+        "place": "Manhattan, New York, USA"
+      }
+    },
+    {
+      "name": "December 31, 1999",
+      "description": "Last day of 1999",
+      "request": {
+        "date": "1999-12-31",
+        "time": "23:59",
+        "place": "London, UK"
+      }
+    }
+  ],
+  "error_examples": [
+    {
+      "name": "Invalid Date Format",
+      "request": {
+        "date": "invalid",
+        "time": "12:00",
+        "place": "Paris, France"
+      },
+      "expected_status": 400,
+      "expected_error": "Invalid date format"
+    },
+    {
+      "name": "Invalid Time Format",
+      "request": {
+        "date": "2000-01-01",
+        "time": "25:00",
+        "place": "Paris, France"
+      },
+      "expected_status": 400,
+      "expected_error": "Invalid time format"
+    },
+    {
+      "name": "Date Out of Range (Too Early)",
+      "request": {
+        "date": "1800-01-01",
+        "time": "12:00",
+        "place": "Paris, France"
+      },
+      "expected_status": 400,
+      "expected_error": "Date out of valid range"
+    },
+    {
+      "name": "Date Out of Range (Too Late)",
+      "request": {
+        "date": "2150-01-01",
+        "time": "12:00",
+        "place": "Paris, France"
+      },
+      "expected_status": 400,
+      "expected_error": "Date out of valid range"
+    },
+    {
+      "name": "Empty Place",
+      "request": {
+        "date": "2000-01-01",
+        "time": "12:00",
+        "place": ""
+      },
+      "expected_status": 400,
+      "expected_error": "Place must not be empty"
+    },
+    {
+      "name": "Invalid Location",
+      "request": {
+        "date": "2000-01-01",
+        "time": "12:00",
+        "place": "XYZ999InvalidPlace"
+      },
+      "expected_status": 404,
+      "expected_error": "Unable to resolve location"
+    },
+    {
+      "name": "Ambiguous Location - Springfield",
+      "request": {
+        "date": "2000-01-01",
+        "time": "12:00",
+        "place": "Springfield"
+      },
+      "expected_status": 409,
+      "expected_error": "Multiple locations found",
+      "notes": "Will return candidate list with 5 Springfields"
+    },
+    {
+      "name": "Ambiguous Location - London",
+      "request": {
+        "date": "2000-01-01",
+        "time": "12:00",
+        "place": "London"
+      },
+      "expected_status": 409,
+      "expected_error": "Multiple locations found",
+      "notes": "Multiple London cities exist worldwide"
+    }
+  ],
+  "curl_examples": [
+    {
+      "name": "Basic Request",
+      "command": "curl -X POST \"http://localhost:8000/astro_vector\" -H \"Content-Type: application/json\" -d '{\"date\":\"1984-09-23\",\"time\":\"12:35\",\"place\":\"Paris, France\"}'"
+    },
+    {
+      "name": "Request Without Time",
+      "command": "curl -X POST \"http://localhost:8000/astro_vector\" -H \"Content-Type: application/json\" -d '{\"date\":\"2000-01-01\",\"place\":\"London, UK\"}'"
+    },
+    {
+      "name": "Test Ambiguous Location",
+      "command": "curl -X POST \"http://localhost:8000/astro_vector\" -H \"Content-Type: application/json\" -d '{\"date\":\"2000-01-01\",\"time\":\"12:00\",\"place\":\"Springfield\"}'"
+    }
+  ]
+}

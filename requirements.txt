@@ -1,0 +1,18 @@
+# Astro Vector Service Dependencies
+# Python 3.8+ required (tested with 3.13)
+
+# Web Framework - Updated versions with Python 3.13 support
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.5
+
+# Astronomical Calculations
+pyswisseph==2.10.3.2
+
+# Geocoding and Timezone
+geopy==2.4.1
+timezonefinder==6.5.4
+pytz==2024.2
+
+# Date/Time Utilities
+python-dateutil==2.9.0.post0
