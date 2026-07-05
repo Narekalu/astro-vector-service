@@ -15,7 +15,12 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, date, time
 
 from astro_vector_service.validators import validate_date, validate_time, validate_place, ValidationError
-from astro_vector_service.geocoding import AmbiguousLocationError
+from astro_vector_service.geocoding import (
+    AmbiguousLocationError,
+    LocationNotFoundError,
+    GeocodingError,
+    geocode_place,
+)
 from astro_vector_service.formatter import calculate_astro_vector, format_error_response, FormatterError
 
 # Configure logging
@@ -273,6 +278,43 @@ async def astro_vector_endpoint(request: AstroVectorRequest):
             status_code=500,
             detail=f"Internal server error: {str(e)}"
         )
+
+
+class GeocodeRequest(BaseModel):
+    """Request model for place resolution"""
+    place: str = Field(..., description="Place as 'City, Country'", example="Paris, France")
+
+
+@app.post("/geocode", tags=["Calculations"])
+async def geocode_endpoint(request: GeocodeRequest):
+    """
+    Resolve a place name to coordinates and a canonical display name,
+    without running any calculations. Useful for confirming the location
+    with a user before computing a chart.
+
+    **Error Handling:**
+    - Ambiguous location (409): Multiple locations found, returns candidate list
+    - Not found (404): Location could not be resolved
+    - Server error (502): Geocoding service failure
+    """
+    try:
+        place = validate_place(request.place)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    try:
+        latitude, longitude, display_name = geocode_place(place)
+        return {
+            "place": display_name,
+            "latitude": latitude,
+            "longitude": longitude,
+        }
+    except AmbiguousLocationError as e:
+        raise HTTPException(status_code=409, detail=format_error_response(e))
+    except LocationNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except GeocodingError as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 if __name__ == "__main__":
