@@ -6,12 +6,24 @@ CRITICAL REQUIREMENT: Ambiguous locations MUST return error with candidate list.
 NO silent defaulting to most populous or first match.
 """
 
+import re
 import pytz
 from datetime import datetime, date, time
 from typing import Tuple, Optional, List, Dict
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 from timezonefinder import TimezoneFinder
+
+# Matches the coordinate suffix this module appends to ambiguous candidates,
+# e.g. "Lisboa, Portugal (38.7078°N, -9.1436°E)". When a caller resubmits one
+# of our own candidate strings, we trust the embedded coordinates directly
+# rather than re-geocoding the (now ambiguous again) name — otherwise a city
+# whose candidates differ only by coordinates can never be resolved.
+_COORD_SUFFIX_RE = re.compile(
+    r'^(?P<name>.*?)\s*\('
+    r'(?P<lat>-?\d+(?:\.\d+)?)\s*°N,\s*'
+    r'(?P<lon>-?\d+(?:\.\d+)?)\s*°E\)\s*$'
+)
 
 
 class GeocodingError(Exception):
@@ -78,6 +90,18 @@ def geocode_place(place: str, timeout: int = 10) -> Tuple[float, float, str]:
     """
     if not place:
         raise GeocodingError("Place name cannot be empty")
+
+    # If the caller resubmitted one of our own disambiguation candidates,
+    # resolve straight from the embedded coordinates. This makes the format
+    # we advertise ("resubmit with 'City, Country (lat°N, lon°E)'") actually
+    # work, and lets a UI carry the user's pick back to us unambiguously.
+    coord_match = _COORD_SUFFIX_RE.match(place)
+    if coord_match:
+        return (
+            float(coord_match.group("lat")),
+            float(coord_match.group("lon")),
+            coord_match.group("name").strip(),
+        )
 
     try:
         # Get multiple results to check for ambiguity
